@@ -3,16 +3,20 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "unsloth_tasks"
+name = "unsloth-tasks"
 version = "0.0.1"
 dependencies = [
-    "boto3",
-    "boto3-stubs",
 ]
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
-cloud = [
+dev = [
+    "pytest",
+    "mypy",
+    "black",
+    "isort",
+]
+core = [
     "sentencepiece",
     "protobuf",
     "datasets",
@@ -21,7 +25,7 @@ cloud = [
     "torch",
     "transformers",
 ]
-depless = [
+core-depless = [
     "bitsandbytes",
     "accelerate",
     "xformers==0.0.29",
@@ -32,23 +36,13 @@ depless = [
     "unsloth_zoo",
     "unsloth",
 ]
-dev = [
-    "mypy",
-    "black",
-    "isort",
+infra = [
+    "boto3",
+    "boto3-stubs[essential]",
 ]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.mypy]
-disallow_untyped_defs = true
-disallow_any_unimported = true
-no_implicit_optional = true
-check_untyped_defs = true
-warn_return_any = true
-warn_unused_ignores = true
-show_error_codes = true
 
 [tool.black]
 line-length = 100

@@ -1,0 +1,196 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'T4 GPU Development Environment for ML Tasks'
+
+Parameters:
+  MyIpAddress:
+    Description: IP address to allow SSH access (CIDR format, e.g., 1.2.3.4/32)
+    Type: String
+    Default: '0.0.0.0/0'
+    
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair
+
+  InstanceType:
+    Description: Instance type with Tesla T4 GPU
+    Type: String
+    Default: g4dn.xlarge
+    AllowedValues:
+      - g4dn.xlarge    # 1 GPU, 4 vCPU, 16 GB
+      - g4dn.2xlarge   # 1 GPU, 8 vCPU, 32 GB
+      - g4dn.4xlarge   # 1 GPU, 16 vCPU, 64 GB
+    
+  VolumeSize:
+    Description: Size of the root volume in GB
+    Type: Number
+    Default: 100
+    MinValue: 8
+
+Mappings:
+  # Latest Deep Learning AMIs with CUDA pre-installed
+  RegionMap:
+    us-east-1:
+      AMI: ami-0c078c0b25ad46e40
+
+Resources:
+  # VPC and Network resources - using default VPC for simplicity
+  
+  # Security Group for T4 Instance
+  GPUInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for T4 GPU instance
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref MyIpAddress
+          Description: SSH access from my IP
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-security-group
+
+  # IAM Role for EC2 instance
+  GPUInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: ParameterStoreAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/unsloth-tasks/*
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-instance-role
+
+  # Instance Profile for the IAM Role
+  GPUInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref GPUInstanceRole
+
+  # T4 GPU Instance
+  GPUInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AMI]
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !GetAtt GPUInstanceSecurityGroup.GroupId
+      IamInstanceProfile: !Ref GPUInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+            VolumeType: gp3
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          
+          echo "Starting instance setup"
+          
+          # Update packages
+          yum update -y
+          
+          # Install git and other dependencies
+          yum install -y git tmux htop
+          
+          # Create working directory
+          mkdir -p /home/ec2-user/unsloth-tasks
+          chown ec2-user:ec2-user /home/ec2-user/unsloth-tasks
+          
+          # Clone repository as ec2-user
+          cd /home/ec2-user/unsloth-tasks
+          sudo -u ec2-user git clone https://github.com/nicktalati/unsloth-tasks.git .
+          
+          # Install project dependencies
+          sudo -u ec2-user pip install -e .
+          
+          # Create a welcome message
+          cat > /home/ec2-user/welcome.txt << 'EOL'
+          ==========================================================
+            Welcome to your T4 GPU Development Environment!
+          ==========================================================
+          
+          This instance has been set up with:
+          - Tesla T4 GPU with CUDA drivers
+          - Your repository code
+          - Project dependencies installed
+          
+          To check GPU status:
+            nvidia-smi
+          
+          Your code is located at:
+            ~/unsloth-tasks
+          
+          Happy coding!
+          EOL
+          
+          # Add welcome message to bashrc
+          echo "cat /home/ec2-user/welcome.txt" >> /home/ec2-user/.bashrc
+          
+          # Auto-shutdown after 6 hours of uptime to save costs (uncomment to enable)
+          # echo "sudo shutdown -h +360" | at now
+          
+          echo "Setup complete!"
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-t4-instance
+        - Key: AutoShutdown
+          Value: 'true'
+
+  # CloudWatch Alarm to shut down instance on low CPU usage
+  # This helps prevent runaway costs if you forget to shut down the instance
+  LowCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Shutdown instance after extended idle time
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 3600  # 1 hour
+      EvaluationPeriods: 2
+      Threshold: 10  # 10% CPU
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref GPUInstance
+      AlarmActions:
+        - !Sub arn:aws:automate:${AWS::Region}:ec2:stop
+
+Outputs:
+  InstanceId:
+    Description: ID of the T4 GPU instance
+    Value: !Ref GPUInstance
+    
+  PublicIP:
+    Description: Public IP address of the T4 GPU instance
+    Value: !GetAtt GPUInstance.PublicIp
+    
+  SSHCommand:
+    Description: Command to SSH into the instance
+    Value: !Sub ssh -i ${KeyName}.pem ec2-user@${GPUInstance.PublicIp}
+    
+  InstanceStatus:
+    Description: Status of the T4 GPU instance
+    Value: !GetAtt GPUInstance.State
