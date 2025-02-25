@@ -6,7 +6,7 @@ This repository contains code to set up a CloudFormation stack with a Tesla T4 G
 
 1. An AWS account with appropriate permissions
 2. AWS CLI configured with your credentials
-3. Python 3.11
+3. Python 3.9
 4. An EC2 key pair for SSH access
 5. Your public IP address (for secure SSH access)
 

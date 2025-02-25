@@ -7,7 +7,7 @@ name = "unsloth-tasks"
 version = "0.0.1"
 dependencies = [
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 
 [project.optional-dependencies]
 dev = [
