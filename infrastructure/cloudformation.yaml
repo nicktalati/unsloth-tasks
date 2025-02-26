@@ -114,9 +114,15 @@ Resources:
           # Install git and other dependencies
           apt-get install -y git tmux htop
 
-          # Install neovim and dependencies for your configuration
-          echo "Installing Neovim and dependencies..."
-          apt-get install -y neovim gcc make python3-pip
+          # Install neovim from the unstable PPA to get a newer version
+          echo "Installing Neovim from PPA..."
+          apt-get install -y software-properties-common
+          add-apt-repository -y ppa:neovim-ppa/unstable
+          apt-get update -y
+          apt-get install -y neovim
+          
+          # Install gcc and other build essentials for potential plugin compilation
+          apt-get install -y build-essential cmake python3-pip
 
           # Create working directory for project
           mkdir -p /home/ubuntu/unsloth-tasks
@@ -167,6 +173,10 @@ Resources:
 
           # Add welcome message to bashrc
           echo "cat /home/ubuntu/welcome.txt" >> /home/ubuntu/.bashrc
+
+          # Show Neovim version in welcome
+          echo -e "\nNeovim version:" >> /home/ubuntu/welcome.txt
+          nvim --version | head -n 1 >> /home/ubuntu/welcome.txt
 
           # Auto-shutdown after 6 hours of uptime to save costs (uncomment to enable)
           # echo "sudo shutdown -h +360" | at now
