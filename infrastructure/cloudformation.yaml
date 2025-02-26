@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'T4 GPU Development Environment for ML Tasks'
+Description: 'T4 GPU Development Environment for ML Tasks (Ubuntu)'
 
 Parameters:
   MyIpAddress:
@@ -28,14 +28,12 @@ Parameters:
     MinValue: 8
 
 Mappings:
-  # Latest Deep Learning AMIs with CUDA pre-installed
+  # Deep Learning AMIs with CUDA pre-installed (Ubuntu)
   RegionMap:
     us-east-1:
-      AMI: ami-0c078c0b25ad46e40
+      AMI: ami-0c078c0b25ad46e40  # Keep this ID since it's what your instance is using
 
 Resources:
-  # VPC and Network resources - using default VPC for simplicity
-
   # Security Group for T4 Instance
   GPUInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -97,7 +95,7 @@ Resources:
         - !GetAtt GPUInstanceSecurityGroup.GroupId
       IamInstanceProfile: !Ref GPUInstanceProfile
       BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: /dev/sda1  # Ubuntu uses /dev/sda1 instead of /dev/xvda
           Ebs:
             VolumeSize: !Ref VolumeSize
             VolumeType: gp3
@@ -109,45 +107,45 @@ Resources:
 
           echo "Starting instance setup"
 
-          # Update packages
-          yum update -y
+          # Update packages (Ubuntu uses apt, not yum)
+          apt-get update -y
+          apt-get upgrade -y
 
           # Install git and other dependencies
-          yum install -y git tmux htop
+          apt-get install -y git tmux htop
 
           # Install neovim and dependencies for your configuration
           echo "Installing Neovim and dependencies..."
-          yum install -y epel-release
-          yum install -y neovim gcc make
+          apt-get install -y neovim gcc make python3-pip
 
           # Create working directory for project
-          mkdir -p /home/ec2-user/unsloth-tasks
-          chown ec2-user:ec2-user /home/ec2-user/unsloth-tasks
+          mkdir -p /home/ubuntu/unsloth-tasks
+          chown ubuntu:ubuntu /home/ubuntu/unsloth-tasks
 
-          # Clone repository as ec2-user
-          cd /home/ec2-user/unsloth-tasks
-          sudo -u ec2-user git clone https://github.com/nicktalati/unsloth-tasks.git .
+          # Clone repository as ubuntu user
+          cd /home/ubuntu/unsloth-tasks
+          sudo -u ubuntu git clone https://github.com/nicktalati/unsloth-tasks.git .
 
           # Install project dependencies
-          sudo -u ec2-user pip install -e .
+          sudo -u ubuntu pip install -e .
 
           # Set up Neovim configuration
           echo "Setting up Neovim configuration..."
 
           # Create neovim config directory if it doesn't exist
-          sudo -u ec2-user mkdir -p /home/ec2-user/.config/nvim
+          sudo -u ubuntu mkdir -p /home/ubuntu/.config/nvim
 
           # Clone nvim-config repository and set up configuration
-          sudo -u ec2-user git clone https://github.com/nicktalati/nvim-config.git /home/ec2-user/nvim-config
+          sudo -u ubuntu git clone https://github.com/nicktalati/nvim-config.git /home/ubuntu/nvim-config
 
           # Copy init.lua to the proper location
-          sudo -u ec2-user cp /home/ec2-user/nvim-config/init.lua /home/ec2-user/.config/nvim/
+          sudo -u ubuntu cp /home/ubuntu/nvim-config/init.lua /home/ubuntu/.config/nvim/
 
           # Set permissions
-          chown -R ec2-user:ec2-user /home/ec2-user/.config
+          chown -R ubuntu:ubuntu /home/ubuntu/.config
 
           # Create a welcome message
-          cat > /home/ec2-user/welcome.txt << 'EOL'
+          cat > /home/ubuntu/welcome.txt << 'EOL'
           ==========================================================
             Welcome to your T4 GPU Development Environment!
           ==========================================================
@@ -168,7 +166,7 @@ Resources:
           EOL
 
           # Add welcome message to bashrc
-          echo "cat /home/ec2-user/welcome.txt" >> /home/ec2-user/.bashrc
+          echo "cat /home/ubuntu/welcome.txt" >> /home/ubuntu/.bashrc
 
           # Auto-shutdown after 6 hours of uptime to save costs (uncomment to enable)
           # echo "sudo shutdown -h +360" | at now
@@ -210,8 +208,4 @@ Outputs:
 
   SSHCommand:
     Description: Command to SSH into the instance
-    Value: !Sub ssh -i ${KeyName}.pem ec2-user@${GPUInstance.PublicIp}
-
-  InstanceStatus:
-    Description: Status of the T4 GPU instance
-    Value: !GetAtt GPUInstance.State
+    Value: !Sub ssh -i ${KeyName}.pem ubuntu@${GPUInstance.PublicIp}
