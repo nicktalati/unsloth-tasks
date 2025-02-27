@@ -130,17 +130,23 @@ Resources:
           export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
           EOL
 
+          cat > /home/ubuntu/.tmux.conf << 'EOL'
+          unbind C-b
+          set -g prefix C-n
+          EOL
 
-          sudo -u ubuntu cat > /home/ubuntu/.inputrc << 'EOL'
+          cat > /home/ubuntu/.inputrc << 'EOL'
           set editing-mode vi
           set keymap vi-insert
           "kj": "\e"
+          set keymap vi-command
+          "k": history-search-backward
+          "j": history-search-forward
           EOL
 
-          sudo -u ubuntu mkdir -p /home/ubuntu/.config/nvim
-          sudo -u ubuntu git clone https://github.com/nicktalati/nvim-config.git /home/ubuntu/nvim-config
-          sudo -u ubuntu cp /home/ubuntu/nvim-config/init.lua /home/ubuntu/.config/nvim/
-          chown -R ubuntu:ubuntu /home/ubuntu/.config
+          mkdir -p /home/ubuntu/.config/nvim
+          git clone https://github.com/nicktalati/nvim-config.git /home/ubuntu/nvim-config
+          cp /home/ubuntu/nvim-config/init.lua /home/ubuntu/.config/nvim/
 
           cat > /home/ubuntu/welcome.txt << 'EOL'
 

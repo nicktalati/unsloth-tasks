@@ -6,17 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "unsloth-tasks"
 version = "0.0.1"
 dependencies = [
-]
-requires-python = ">=3.9"
-
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "mypy",
-    "black",
-    "isort",
-]
-core = [
     "sentencepiece",
     "protobuf",
     "datasets",
@@ -24,8 +13,6 @@ core = [
     "hf_transfer",
     "torch",
     "transformers",
-]
-core-depless = [
     "bitsandbytes",
     "accelerate",
     "xformers==0.0.29",
@@ -35,6 +22,18 @@ core-depless = [
     "cut_cross_entropy",
     "unsloth_zoo",
     "unsloth",
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "python-language-server",
+    "pylsp-mypy",
+    "mypy",
+    "black",
+    "isort",
+    "ipython"
 ]
 infra = [
     "boto3",
