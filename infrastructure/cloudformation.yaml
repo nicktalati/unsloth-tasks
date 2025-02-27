@@ -129,6 +129,7 @@ Resources:
           eval "$(pyenv init - bash)"
           eval "$(pyenv virtualenv-init -)"
           export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
+          alias tree="tree --gitignore"
           EOL
 
           cat > /home/ubuntu/.tmux.conf << 'EOL'
