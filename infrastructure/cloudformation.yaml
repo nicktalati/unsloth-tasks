@@ -105,91 +105,40 @@ Resources:
           #!/bin/bash -xe
           exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
-          echo "Starting instance setup"
+          # apt-get update -y
+          # apt-get upgrade -y
 
-          # Update packages (Ubuntu uses apt, not yum)
-          apt-get update -y
-          apt-get upgrade -y
+          # apt-get install -y git tmux htop
+          # apt-get install -y build-essential cmake python3-pip
 
-          # Install git and other dependencies
-          apt-get install -y git tmux htop
+          # mkdir -p /home/ubuntu/unsloth-tasks
+          # chown ubuntu:ubuntu /home/ubuntu/unsloth-tasks
 
-          # Install neovim from the unstable PPA to get a newer version
-          echo "Installing Neovim from PPA..."
-          apt-get install -y software-properties-common
-          add-apt-repository -y ppa:neovim-ppa/unstable
-          apt-get update -y
-          apt-get install -y neovim
-          
-          # Install gcc and other build essentials for potential plugin compilation
-          apt-get install -y build-essential cmake python3-pip
+          # cd /home/ubuntu/unsloth-tasks
+          # sudo -u ubuntu git clone https://github.com/nicktalati/unsloth-tasks.git .
 
-          # Create working directory for project
-          mkdir -p /home/ubuntu/unsloth-tasks
-          chown ubuntu:ubuntu /home/ubuntu/unsloth-tasks
+          # sudo -u ubuntu pip install -e .
 
-          # Clone repository as ubuntu user
-          cd /home/ubuntu/unsloth-tasks
-          sudo -u ubuntu git clone https://github.com/nicktalati/unsloth-tasks.git .
+          # sudo -u ubuntu mkdir -p /home/ubuntu/.config/nvim
+          # sudo -u ubuntu git clone https://github.com/nicktalati/nvim-config.git /home/ubuntu/nvim-config
+          # sudo -u ubuntu cp /home/ubuntu/nvim-config/init.lua /home/ubuntu/.config/nvim/
+          # chown -R ubuntu:ubuntu /home/ubuntu/.config
 
-          # Install project dependencies
-          sudo -u ubuntu pip install -e .
-
-          # Set up Neovim configuration
-          echo "Setting up Neovim configuration..."
-
-          # Create neovim config directory if it doesn't exist
-          sudo -u ubuntu mkdir -p /home/ubuntu/.config/nvim
-
-          # Clone nvim-config repository and set up configuration
-          sudo -u ubuntu git clone https://github.com/nicktalati/nvim-config.git /home/ubuntu/nvim-config
-
-          # Copy init.lua to the proper location
-          sudo -u ubuntu cp /home/ubuntu/nvim-config/init.lua /home/ubuntu/.config/nvim/
-
-          # Set permissions
-          chown -R ubuntu:ubuntu /home/ubuntu/.config
-
-          # Create a welcome message
           cat > /home/ubuntu/welcome.txt << 'EOL'
           ==========================================================
             Welcome to your T4 GPU Development Environment!
           ==========================================================
 
-          This instance has been set up with:
-          - Tesla T4 GPU with CUDA drivers
-          - Your repository code
-          - Project dependencies installed
-          - Neovim with your personal configuration
-
-          To check GPU status:
-            nvidia-smi
-
-          Your code is located at:
-            ~/unsloth-tasks
-
           Happy coding!
           EOL
 
-          # Add welcome message to bashrc
           echo "cat /home/ubuntu/welcome.txt" >> /home/ubuntu/.bashrc
-
-          # Show Neovim version in welcome
-          echo -e "\nNeovim version:" >> /home/ubuntu/welcome.txt
-          nvim --version | head -n 1 >> /home/ubuntu/welcome.txt
-
-          # Auto-shutdown after 6 hours of uptime to save costs (uncomment to enable)
-          # echo "sudo shutdown -h +360" | at now
-
-          echo "Setup complete!"
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-t4-instance
         - Key: AutoShutdown
           Value: 'true'
 
-  # CloudWatch Alarm to shut down instance on low CPU usage
-  # This helps prevent runaway costs if you forget to shut down the instance
   LowCPUAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
