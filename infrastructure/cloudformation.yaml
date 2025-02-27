@@ -105,8 +105,7 @@ Resources:
           #!/bin/bash -xe
           exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
-          sudo -u ubuntu git clone https://github.com/nicktalati/unsloth-tasks.git .
-          cd /home/ubuntu/unsloth-tasks
+          sudo -u ubuntu git clone https://github.com/nicktalati/unsloth-tasks.git /home/ubuntu/unsloth-tasks
 
           # sudo -u ubuntu mkdir -p /home/ubuntu/.config/nvim
           # sudo -u ubuntu git clone https://github.com/nicktalati/nvim-config.git /home/ubuntu/nvim-config
