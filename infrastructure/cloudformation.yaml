@@ -133,6 +133,7 @@ Resources:
           cat > /home/ubuntu/.tmux.conf << 'EOL'
           unbind C-b
           set -g prefix C-n
+          setw -g mode-keys vi
           EOL
 
           cat > /home/ubuntu/.inputrc << 'EOL'
