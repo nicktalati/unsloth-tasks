@@ -95,7 +95,7 @@ Resources:
         - !GetAtt GPUInstanceSecurityGroup.GroupId
       IamInstanceProfile: !Ref GPUInstanceProfile
       BlockDeviceMappings:
-        - DeviceName: /dev/sda1  # Ubuntu uses /dev/sda1 instead of /dev/xvda
+        - DeviceName: /dev/sda1
           Ebs:
             VolumeSize: !Ref VolumeSize
             VolumeType: gp3
@@ -107,12 +107,25 @@ Resources:
 
           sudo -u ubuntu git clone https://github.com/nicktalati/unsloth-tasks.git /home/ubuntu/unsloth-tasks
 
-          # sudo -u ubuntu mkdir -p /home/ubuntu/.config/nvim
-          # sudo -u ubuntu git clone https://github.com/nicktalati/nvim-config.git /home/ubuntu/nvim-config
-          # sudo -u ubuntu cp /home/ubuntu/nvim-config/init.lua /home/ubuntu/.config/nvim/
-          # chown -R ubuntu:ubuntu /home/ubuntu/.config
+          curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+          rm -rf /opt/nvim
+          tar -C /opt -xzf nvim-linux-x86_64.tar.gz
+
+          echo 'export PATH="$PATH:/opt/nvim-linux-x86_64/bin"' >> /home/ubuntu/.bashrc
+
+          sudo -u ubuntu cat > /home/ubuntu/.inputrc << 'EOL'
+          set editing-mode vi
+          set keymap vi-insert
+          "kj": "\e"
+          EOL
+
+          sudo -u ubuntu mkdir -p /home/ubuntu/.config/nvim
+          sudo -u ubuntu git clone https://github.com/nicktalati/nvim-config.git /home/ubuntu/nvim-config
+          sudo -u ubuntu cp /home/ubuntu/nvim-config/init.lua /home/ubuntu/.config/nvim/
+          chown -R ubuntu:ubuntu /home/ubuntu/.config
 
           cat > /home/ubuntu/welcome.txt << 'EOL'
+
           ==========================================================
             Welcome to your T4 GPU Development Environment!
           ==========================================================
