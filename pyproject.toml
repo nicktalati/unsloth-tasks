@@ -35,10 +35,6 @@ dev = [
     "isort",
     "ipython"
 ]
-infra = [
-    "boto3",
-    "boto3-stubs[essential]",
-]
 
 [tool.setuptools.packages.find]
 where = ["src"]
